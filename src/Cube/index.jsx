@@ -83,6 +83,10 @@ const Cube = () => {
         storedCameraJson.target.y,
         storedCameraJson.target.z
       );
+    } else {
+      camera.position.x = 50;
+      camera.position.y = 50;
+      camera.position.z = 100;
     }
 
     // 创建坐标轴辅助对象
