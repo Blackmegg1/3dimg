@@ -1,16 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Button, Drawer, Form, Input } from "antd";
+import { Button, Drawer, Form, Input, message } from "antd";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry";
 import regularFont from "three/examples/fonts/optimer_regular.typeface.json";
 
+import EditTable from "../EditTable";
+
 const Cube = () => {
   const [form] = Form.useForm();
   const containerRef = useRef();
+  const cameraRef = useRef();
+  const controlRef = useRef();
+  const [messageApi, contextHolder] = message.useMessage();
   const [open, setOpen] = useState(false);
   const [axisStart, setAxisStart] = useState(0);
+  const [geoData, setGeoData] = useState([
+    {
+      key: 0,
+      x: 80,
+      type: 1,
+      depth: 2,
+      color: "rgb(255, 0, 0)",
+    },
+  ]);
   const showDrawer = () => {
     setOpen(true);
   };
@@ -45,11 +59,34 @@ const Cube = () => {
       containerRef.current.clientHeight
     );
     containerRef.current.appendChild(renderer.domElement);
+
     // 镜头控制
     const controls = new OrbitControls(camera, renderer.domElement);
+    controlRef.current = controls;
+
+    const storedCamera = localStorage.getItem("cameraState");
+    if (storedCamera) {
+      const storedCameraJson = JSON.parse(storedCamera);
+      camera.position.set(
+        storedCameraJson.position.x,
+        storedCameraJson.position.y,
+        storedCameraJson.position.z
+      );
+      camera.rotation.set(
+        storedCameraJson.rotation["_x"],
+        storedCameraJson.rotation["_y"],
+        storedCameraJson.rotation["_z"],
+        storedCameraJson.rotation["_order"]
+      );
+      controls.target.set(
+        storedCameraJson.target.x,
+        storedCameraJson.target.y,
+        storedCameraJson.target.z
+      );
+    }
 
     // 创建坐标轴辅助对象
-    const axesHelper = new THREE.AxesHelper(100);
+    const axesHelper = new THREE.AxesHelper(40);
     scene.add(axesHelper);
 
     // 创建体材质
@@ -66,16 +103,19 @@ const Cube = () => {
 
     // 添加网格线
     addGridLines(cubeMesh, 10);
-    // 添加平面体
-    addCuttingPlane(80, 2);
-    // 添加曲面体
-    addCurve(50, 1);
+
+    for (let geo of geoData) {
+      if (geo.type === 1) {
+        // 添加平面体
+        addCuttingPlane(geo.x, geo.depth, geo.color);
+      } else {
+        // 添加曲面体
+        addCurve(geo.x, geo.depth, geo.color);
+      }
+    }
+
     // 添加刻度文字
     addAxisNumber(axisStart, 100, 10);
-    // 设置相机位置
-    camera.position.x = 50;
-    camera.position.y = 50;
-    camera.position.z = 100;
 
     // 渲染场景
     const animate = () => {
@@ -150,7 +190,7 @@ const Cube = () => {
     }
 
     // 绘制长方体
-    function addCuttingPlane(x, depth = 1, color = 0xff0000) {
+    function addCuttingPlane(x, depth = 1, color = "rgb(255, 0, 0)") {
       var boxGeometry = new THREE.BoxGeometry(depth, 20, 20); // 设置长方体的大小
       var boxMaterial = new THREE.MeshBasicMaterial({
         color: color,
@@ -167,7 +207,7 @@ const Cube = () => {
     }
 
     // 绘制曲面
-    function addCurve(x = 0, depth = 1, color = 0xff0000) {
+    function addCurve(x = 0, depth = 1, color = "rgb(255, 0, 0)") {
       for (let i = 0; i < 20; i++) {
         // 创建曲线
         const curve = new THREE.CatmullRomCurve3([
@@ -249,6 +289,8 @@ const Cube = () => {
       return needResize;
     }
 
+    cameraRef.current = camera;
+
     animate();
 
     // 当组件卸载时，停止动画循环
@@ -256,12 +298,44 @@ const Cube = () => {
       renderer.domElement.remove();
       renderer.forceContextLoss();
     };
-  }, [axisStart]);
+  }, [axisStart, geoData]);
 
   const onFinish = (values) => {
     const { axisStart } = values;
     setAxisStart(+axisStart);
+    console.log(geoData);
+    onClose();
   };
+
+  const addGeo = () => {
+    const newkey = geoData.length;
+    const newGeoData = [
+      ...geoData,
+      {
+        key: newkey,
+        x: 0,
+        type: 1,
+        depth: 1,
+        color: "rgb(255, 0, 0)",
+      },
+    ];
+    setGeoData(newGeoData);
+  };
+
+  function getCameraState(camera, orbitControls) {
+    return {
+      position: camera.position,
+      rotation: camera.rotation,
+      target: orbitControls.target,
+    };
+  }
+
+  // 保存相机状态到localStorage
+  function saveCameraState() {
+    var cameraState = getCameraState(cameraRef.current, controlRef.current);
+    localStorage.setItem("cameraState", JSON.stringify(cameraState));
+    messageApi.success("当前视角已保存！");
+  }
 
   return (
     <>
@@ -272,21 +346,42 @@ const Cube = () => {
       >
         图像设置
       </Button>
+      <Button
+        type="default"
+        style={{ position: "fixed", top: "2vh", left: "10vw" }}
+        onClick={saveCameraState}
+      >
+        保存视角
+      </Button>
       <div ref={containerRef} style={{ height: "100vh", width: "100vw" }}></div>
       <Drawer
         title="图像设置"
         placement="left"
         closable={true}
+        size="large"
         onClose={onClose}
         open={open}
       >
         <Form onFinish={onFinish} initialValues={{ axisStart: axisStart }}>
           <Form.Item
             name="axisStart"
-            label="坐标轴起始值"
+            label="坐标轴起始值(m)"
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input style={{ width: "20%" }} type="number" />
+          </Form.Item>
+          <Form.Item wrapperCol={{ span: 16 }}>
+            <Button type="primary" onClick={addGeo}>
+              添加偏移
+            </Button>
+          </Form.Item>
+          <Form.Item>
+            <EditTable
+              name="geoData"
+              form={form}
+              data={geoData}
+              setData={setGeoData}
+            />
           </Form.Item>
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
             <Button type="primary" htmlType="submit">
@@ -295,6 +390,7 @@ const Cube = () => {
           </Form.Item>
         </Form>
       </Drawer>
+      {contextHolder}
     </>
   );
 };
