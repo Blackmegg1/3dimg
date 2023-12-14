@@ -35,7 +35,7 @@ const Cube = () => {
   useEffect(() => {
     // 创建场景
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x808080);
+    scene.background = new THREE.Color(0xcccccc);
 
     // 创建相机
     const camera = new THREE.PerspectiveCamera(
