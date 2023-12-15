@@ -8,6 +8,7 @@ import {
   Typography,
   Select,
   ColorPicker,
+  Space,
 } from "antd";
 
 const EditableCell = ({
@@ -108,6 +109,14 @@ const EditTable = ({ data, form, setData }) => {
       console.log("Validate Failed:", errInfo);
     }
   };
+  const deleteRow = (key) => {
+    const newData = [...data];
+    const index = newData.findIndex((item) => key === item.key);
+    if (index > -1) {
+      newData.splice(index, 1);
+      setData(newData);
+    }
+  };
 
   const columns = [
     {
@@ -166,12 +175,20 @@ const EditTable = ({ data, form, setData }) => {
             </Popconfirm>
           </span>
         ) : (
-          <Typography.Link
-            disabled={editingKey !== ""}
-            onClick={() => edit(record)}
-          >
-            编辑
-          </Typography.Link>
+          <Space>
+            <Typography.Link
+              disabled={editingKey !== ""}
+              onClick={() => edit(record)}
+            >
+              编辑
+            </Typography.Link>
+            <Popconfirm
+              title="确定删除？"
+              onConfirm={() => deleteRow(record.key)}
+            >
+              <a disabled={editingKey !== ""}>删除</a>
+            </Popconfirm>
+          </Space>
         );
       },
     },
