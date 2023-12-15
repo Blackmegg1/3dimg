@@ -35,7 +35,7 @@ const Cube = () => {
   useEffect(() => {
     // 创建场景
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xcccccc);
+    scene.background = new THREE.Color(0xffffff);
 
     // 创建相机
     const camera = new THREE.PerspectiveCamera(
@@ -139,7 +139,11 @@ const Cube = () => {
       var material = new THREE.LineBasicMaterial({
         color: 0x000000,
         transparent: true,
-        opacity: 0.3,
+        opacity: 2,
+        linewidth: 1,
+        scale: 1,
+        dashSize: 3, // 设置虚线的长度
+        gapSize: 1, // 设置虚线之间的间隔
       });
 
       var vertices = [];
@@ -190,6 +194,7 @@ const Cube = () => {
       );
 
       var lines = new THREE.LineSegments(geometry, material);
+      lines.material.dashed = true;
       mesh.add(lines);
     }
 
