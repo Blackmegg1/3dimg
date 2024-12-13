@@ -16,6 +16,8 @@ const Cube = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [open, setOpen] = useState(false);
   const [axisStart, setAxisStart] = useState(0);
+  const [axisLength, setAxisLength] = useState(100);
+
   const [geoData, setGeoData] = useState([
     {
       key: 0,
@@ -100,9 +102,9 @@ const Cube = () => {
       opacity: 0.3,
     });
     // 创建基础长方体
-    const cubeGeometry = new THREE.BoxGeometry(100, 20, 20);
+    const cubeGeometry = new THREE.BoxGeometry(axisLength, 20, 20);
     const cubeMesh = new THREE.Mesh(cubeGeometry, transparentMaterial);
-    cubeMesh.position.set(50, 10, 10);
+    cubeMesh.position.set(axisLength / 2, 10, 10);
     scene.add(cubeMesh);
 
     // 添加网格线
@@ -119,7 +121,7 @@ const Cube = () => {
     }
 
     // 添加刻度文字
-    addAxisNumber(axisStart, 100, 10);
+    addAxisNumber(axisStart, axisLength, 10);
 
     // 渲染场景
     const animate = () => {
@@ -307,11 +309,12 @@ const Cube = () => {
       renderer.domElement.remove();
       renderer.forceContextLoss();
     };
-  }, [axisStart, geoData]);
+  }, [axisStart, geoData, axisLength]);
 
   const onFinish = (values) => {
-    const { axisStart } = values;
+    const { axisStart, axisLength } = values;
     setAxisStart(+axisStart);
+    setAxisLength(+axisLength);
     console.log(geoData);
     onClose();
   };
@@ -371,7 +374,17 @@ const Cube = () => {
         onClose={onClose}
         open={open}
       >
-        <Form onFinish={onFinish} initialValues={{ axisStart: axisStart }}>
+        <Form
+          onFinish={onFinish}
+          initialValues={{ axisStart: axisStart, axisLength: axisLength }}
+        >
+          <Form.Item
+            name="axisLength"
+            label="坐标轴长度(m)"
+            rules={[{ required: true }]}
+          >
+            <Input style={{ width: "20%" }} type="number" />
+          </Form.Item>
           <Form.Item
             name="axisStart"
             label="坐标轴起始值(m)"
